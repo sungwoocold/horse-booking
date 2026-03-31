@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ko">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+		/>
+		<title>Premium Horse Riding Kiosk</title>
+		<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+		/>
+		<style>
+			:root {
+				--glass: rgba(255, 255, 255, 0.08);
+				--glass-border: rgba(255, 255, 255, 0.15);
+				--accent: #00ffb2; /* 트렌디한 에메랄드 네온 */
+				--bg-dark: #0a0f0d;
+			}
+
+			body {
+				margin: 0;
+				padding: 0;
+				font-family: 'Pretendard', sans-serif;
+				background: radial-gradient(circle at top right, #1a2e24, var(--bg-dark));
+				color: #fff;
+				height: 100vh;
+				overflow: hidden;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+			/* Glassmorphism Container */
+			.kiosk-container {
+				width: 90vw;
+				max-width: 500px;
+				height: 85vh;
+				background: var(--glass);
+				backdrop-filter: blur(20px);
+				border: 1px solid var(--glass-border);
+				border-radius: 40px;
+				display: flex;
+				flex-direction: column;
+				padding: 30px;
+				box-sizing: border-box;
+				position: relative;
+				box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+			}
+
+			.step {
+				display: none;
+				flex-direction: column;
+				height: 100%;
+				animation: fadeIn 0.5s ease;
+			}
+			.step.active {
+				display: flex;
+			}
+
+			@keyframes fadeIn {
+				from {
+					opacity: 0;
+					transform: translateY(10px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			h1 {
+				font-size: 1.8rem;
+				font-weight: 700;
+				margin-bottom: 10px;
+				letter-spacing: -1px;
+			}
+			.sub-text {
+				color: #aaa;
+				font-size: 0.9rem;
+				margin-bottom: 30px;
+			}
+
+			/* Column Layout for Tickets */
+			.ticket-list {
+				flex: 1;
+				overflow-y: auto;
+				padding-right: 5px;
+			}
+			.ticket-item {
+				background: rgba(255, 255, 255, 0.05);
+				border: 1px solid var(--glass-border);
+				border-radius: 24px;
+				padding: 20px;
+				margin-bottom: 15px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				transition: 0.3s;
+			}
+			.ticket-item:active {
+				transform: scale(0.98);
+				background: rgba(255, 255, 255, 0.1);
+			}
+			.ticket-info h3 {
+				margin: 0;
+				font-size: 1.1rem;
+			}
+			.ticket-info span {
+				color: var(--accent);
+				font-weight: 600;
+				font-size: 0.9rem;
+			}
+
+			/* Counter UI */
+			.counter {
+				display: flex;
+				align-items: center;
+				gap: 15px;
+			}
+			.counter button {
+				width: 36px;
+				height: 36px;
+				border-radius: 12px;
+				border: 1px solid var(--accent);
+				background: transparent;
+				color: var(--accent);
+				font-size: 1.2rem;
+				cursor: pointer;
+			}
+			.counter span {
+				font-size: 1.2rem;
+				font-weight: bold;
+				min-width: 20px;
+				text-align: center;
+			}
+
+			/* Bottom Bar */
+			.bottom-bar {
+				padding-top: 20px;
+				border-top: 1px solid var(--glass-border);
+			}
+			.total-price {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 20px;
+				font-size: 1.3rem;
+				font-weight: 700;
+			}
+
+			.btn-main {
+				background: var(--accent);
+				color: #000;
+				border: none;
+				padding: 22px;
+				border-radius: 20px;
+				font-size: 1.1rem;
+				font-weight: 700;
+				cursor: pointer;
+				box-shadow: 0 10px 20px rgba(0, 255, 178, 0.2);
+				transition: 0.3s;
+			}
+			.btn-main:disabled {
+				background: #333;
+				color: #777;
+				box-shadow: none;
+			}
+
+			/* Custom Scrollbar */
+			.ticket-list::-webkit-scrollbar {
+				width: 4px;
+			}
+			.ticket-list::-webkit-scrollbar-thumb {
+				background: var(--glass-border);
+				border-radius: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="kiosk-container">
+			<!-- STEP 1: 인원 선택 -->
+			<div id="step1" class="step active">
+				<h1>인원 선택</h1>
+				<p class="sub-text">체험하실 인원을 선택해 주세요. (최대 20분)</p>
+
+				<div class="ticket-list" id="ticket-list">
+					<!-- JS에서 렌더링 -->
+				</div>
+
+				<div class="bottom-bar">
+					<div class="total-price">
+						<span>총 결제 금액</span>
+						<span id="total-amount">0원</span>
+					</div>
+					<button class="btn-main" id="next-btn" disabled onclick="goStep(2)">
+						동의 및 결제하기
+					</button>
+				</div>
+			</div>
+
+			<!-- STEP 2: 안전 동의 및 QR -->
+			<div id="step2" class="step">
+				<h1>안전 동의</h1>
+				<div
+					style="
+						background: rgba(0, 0, 0, 0.2);
+						padding: 20px;
+						border-radius: 20px;
+						font-size: 0.85rem;
+						line-height: 1.6;
+						color: #ccc;
+						margin-bottom: 20px;
+					"
+				>
+					[필수] 승마 체험 안전 수칙<br />
+					- 말의 뒤쪽은 위험하오니 절대 접근 금지<br />
+					- 체험 중 큰 소리를 내거나 갑작스러운 행동 자제<br />
+					- 사고 방지를 위해 안전 요원의 지시 준수
+				</div>
+				<div id="qr-area" style="text-align: center; margin: 20px 0">
+					<div style="background: white; padding: 15px; display: inline-block; border-radius: 20px">
+						<!-- QR 이미지 들어갈 곳 -->
+						<img
+							src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PAYMENT_DUMMY"
+							alt="QR"
+						/>
+					</div>
+					<p style="margin-top: 15px; color: var(--accent)">
+						QR 코드를 스캔하여 결제를 진행해주세요
+					</p>
+				</div>
+				<button class="btn-main" onclick="processComplete()">결제 완료 (테스트)</button>
+			</div>
+
+			<!-- STEP 3: 완료 -->
+			<div id="step3" class="step" style="text-align: center; justify-content: center">
+				<h1 style="font-size: 4rem; margin: 0">✨</h1>
+				<h1>예약 완료!</h1>
+				<p class="sub-text">대기 번호와 상세 안내를<br />메시지로 발송해 드렸습니다.</p>
+				<button class="btn-main" onclick="location.reload()">처음으로</button>
+			</div>
+		</div>
+
+		<script>
+			const ticketData = [
+				{ id: 'kid', label: '미취학 아동', age: '만 6세 이하', price: 30000 },
+				{ id: 'elem', label: '초등학생', age: '8-13세', price: 50000 },
+				{ id: 'univ', label: '중/고/대학생', age: '학생증 지참', price: 60000 },
+				{ id: 'adult', label: '성인', age: '일반', price: 70000 }
+			];
+
+			let cart = {};
+			ticketData.forEach((t) => (cart[t.id] = 0));
+
+			function renderTickets() {
+				const list = document.getElementById('ticket-list');
+				list.innerHTML = ticketData
+					.map(
+						(t) => `
+            <div class="ticket-item">
+                <div class="ticket-info">
+                    <h3>${t.label}</h3>
+                    <span>${t.price.toLocaleString()}원</span>
+                </div>
+                <div class="counter">
+                    <button onclick="updateQty('${t.id}', -1)">-</button>
+                    <span>${cart[t.id]}</span>
+                    <button onclick="updateQty('${t.id}', 1)">+</button>
+                </div>
+            </div>
+        `
+					)
+					.join('');
+			}
+
+			function updateQty(id, change) {
+				cart[id] = Math.max(0, cart[id] + change);
+				renderTickets();
+				calculateTotal();
+			}
+
+			function calculateTotal() {
+				let total = 0;
+				let totalCount = 0;
+				ticketData.forEach((t) => {
+					total += t.price * cart[t.id];
+					totalCount += cart[t.id];
+				});
+				document.getElementById('total-amount').innerText = total.toLocaleString() + '원';
+				document.getElementById('next-btn').disabled = totalCount === 0;
+			}
+
+			function goStep(num) {
+				document.querySelectorAll('.step').forEach((s) => s.classList.remove('active'));
+				document.getElementById('step' + num).classList.add('active');
+			}
+
+			function processComplete() {
+				confetti({
+					particleCount: 150,
+					spread: 60,
+					colors: ['#00FFB2', '#ffffff', '#1B3022']
+				});
+				goStep(3);
+				// 여기서 알림톡 API 호출 (Fetch)
+			}
+
+			renderTickets();
+		</script>
+	</body>
+</html>
