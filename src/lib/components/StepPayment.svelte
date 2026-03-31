@@ -197,7 +197,6 @@
     align-items: center;
     gap: 25px;
     text-align: center;
-    margin-top: 6rem;
   }
 
   .qr-wrapper {

@@ -96,7 +96,7 @@
   .confirm-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    overflow: auto;
     gap: 30px;
   }
 
